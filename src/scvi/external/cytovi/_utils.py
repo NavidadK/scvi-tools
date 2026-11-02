@@ -81,11 +81,25 @@ def validate_layer_key(adata: AnnData, layer_key: str):
             raise ValueError(f"Layer key {layer_key} not found in adata.layers.")
 
 
-def apply_scaling(data, method, feature_range):
+def apply_scaling(data, method, feature_range, quantile=0.9999):
     if method == "minmax":
         scaler = MinMaxScaler(feature_range=feature_range)
     elif method == "standard":
         scaler = StandardScaler()
+
+    elif method == "quantile":
+        if not 0 < quantile <= 1:
+            raise ValueError("quantile must be in (0, 1].")
+
+        q = np.quantile(data, quantile, axis=0)
+        zero_features = np.where(q == 0)[0]
+
+        if len(zero_features) > 0:
+            print(f"Warning: Quantile is zero for features {zero_features} and is left unscaled.")
+            q[zero_features] = 1.0        
+
+        return data / q, None
+    
     return scaler.fit_transform(data), scaler
 
 

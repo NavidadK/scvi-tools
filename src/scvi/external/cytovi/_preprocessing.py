@@ -92,8 +92,9 @@ def transform_arcsinh(
 
 def scale(
     adata: AnnData,
-    method: Literal["minmax", "standard"] = "minmax",
+    method: Literal["minmax", "standard", "quantile"] = "minmax",
     feature_range: tuple[float, float] = (0.0, 1.0),
+    quantile: float = 0.9999,
     transformed_layer_key: str = "transformed",
     scaled_layer_key: str = "scaled",
     batch_key: str = None,
@@ -108,9 +109,12 @@ def scale(
     adata
         The AnnData object to scale.
     method
-        Scaling method: ``'minmax'`` or ``'standard'``.
+        Scaling method: ``'minmax'``, ``'standard'``, or ``'quantile'``.
     feature_range
         Desired range for min–max scaling as ``(low, high)``.
+    quantile
+        Quantile used for quantile scaling (default: 0.9999).
+        Each feature is divided by its corresponding quantile.
     transformed_layer_key
         Key of the source (transformed) layer in ``adata.layers``.
     scaled_layer_key
@@ -143,7 +147,7 @@ def scale(
         for batch in batches:
             adata_batch = adata[adata.obs[batch_key] == batch].copy()
             scaled_data, _ = apply_scaling(
-                adata_batch.layers[transformed_layer_key].copy(), method, feature_range
+                adata_batch.layers[transformed_layer_key].copy(), method, feature_range, quantile
             )
             adata_batch.layers[scaled_layer_key] = scaled_data
             adata_list.append(adata_batch)
@@ -153,7 +157,7 @@ def scale(
         adata.layers[scaled_layer_key] = scaled_data
     else:
         scaled_data, scaler = apply_scaling(
-            adata.layers[transformed_layer_key].copy(), method, feature_range
+            adata.layers[transformed_layer_key].copy(), method, feature_range, quantile
         )
         adata.layers[scaled_layer_key] = scaled_data
 
